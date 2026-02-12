@@ -5,138 +5,191 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'category_id',
-        'supplier_id',
         'name',
-        'sku',
-        'barcode',
         'description',
         'price',
         'cost_price',
-        'quantity',
-        'min_stock_level',
-        'bottle_size',
+        'category_id',
+        'status',
         'alcohol_percentage',
+        'volume_ml',
+        'sku',
+        'barcode',
         'brand',
-        'country_of_origin',
-        'expiry_date',
         'image',
-        'is_active',
+        'stock_quantity',      // Single source of truth for stock
+        'min_stock_level',
+        'created_by',
+        'updated_by',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'alcohol_percentage' => 'decimal:2',
-        'is_active' => 'boolean',
-        'quantity' => 'integer',
+        'volume_ml' => 'integer',
+        'stock_quantity' => 'integer',
         'min_stock_level' => 'integer',
-        'expiry_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Automatically generate SKU if not provided
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($product) {
-            if (empty($product->sku)) {
-                $product->sku = 'PROD-' . strtoupper(Str::random(8));
-            }
-        });
-    }
+    /**
+     * Default attribute values.
+     */
+    protected $attributes = [
+        'status' => 'active',
+        'stock_quantity' => 0,
+        'min_stock_level' => 10,
+    ];
 
-    // Relationship with Category
+    // ─────────────────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Get the category that owns the product.
+     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    // Relationship with Supplier (if exists)
+    /**
+     * Get the supplier for this product (if any).
+     */
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    // Check if stock is low
-    public function isLowStock()
-    {
-        return $this->quantity <= $this->min_stock_level;
-    }
+    // ─────────────────────────────────────────────────────────
+    // SCOPES
+    // ─────────────────────────────────────────────────────────
 
-    // Get profit margin
-    public function getProfitMarginAttribute()
-    {
-        if ($this->cost_price && $this->price > 0) {
-            return (($this->price - $this->cost_price) / $this->price) * 100;
-        }
-        return null;
-    }
-
-    // Get profit amount
-    public function getProfitAmountAttribute()
-    {
-        if ($this->cost_price) {
-            return $this->price - $this->cost_price;
-        }
-        return null;
-    }
-
-    // Get formatted price
-    public function getFormattedPriceAttribute()
-    {
-        return '$' . number_format($this->price, 2);
-    }
-
-    // Scope for active products
+    /**
+     * Scope a query to only include active products.
+     */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('status', 'active');
     }
 
-    // Scope for low stock products
+    /**
+     * Scope a query to only include inactive products.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 'inactive');
+    }
+
+    /**
+     * Scope a query to only include low stock products.
+     */
     public function scopeLowStock($query)
     {
-        return $query->whereColumn('quantity', '<=', 'min_stock_level');
+        return $query->whereColumn('stock_quantity', '<=', 'min_stock_level');
     }
 
-    // Get stock status
-    public function getStockStatusAttribute()
+    /**
+     * Scope a query to only include out of stock products.
+     */
+    public function scopeOutOfStock($query)
     {
-        if ($this->quantity <= 0) {
-            return 'out_of_stock';
-        } elseif ($this->isLowStock()) {
-            return 'low_stock';
+        return $query->where('stock_quantity', '<=', 0);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // ACCESSORS & MUTATORS
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Get the formatted price with currency symbol.
+     */
+    public function getFormattedPriceAttribute(): string
+    {
+        return 'KSh ' . number_format($this->price, 2);
+    }
+
+    /**
+     * Get the formatted cost price with currency symbol.
+     */
+    public function getFormattedCostPriceAttribute(): string
+    {
+        return $this->cost_price ? 'KSh ' . number_format($this->cost_price, 2) : 'N/A';
+    }
+
+    /**
+     * Check if product is in stock.
+     */
+    public function getInStockAttribute(): bool
+    {
+        return $this->stock_quantity > 0;
+    }
+
+    /**
+     * Check if product is low stock.
+     */
+    public function getIsLowStockAttribute(): bool
+    {
+        return $this->stock_quantity <= $this->min_stock_level;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // CUSTOM METHODS
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Generate a unique SKU.
+     */
+    public static function generateSku(): string
+    {
+        $prefix = 'PRD';
+        $timestamp = now()->format('YmdHis');
+        $random = strtoupper(substr(uniqid(), -4));
+        $sku = $prefix . '-' . $timestamp . '-' . $random;
+
+        // Ensure uniqueness
+        while (self::where('sku', $sku)->exists()) {
+            $sku = $prefix . '-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
         }
-        return 'in_stock';
+
+        return $sku;
     }
 
-    // Get stock status text
-    public function getStockStatusTextAttribute()
+    /**
+     * Increase stock quantity.
+     */
+    public function increaseStock(int $quantity): void
     {
-        $status = $this->stock_status;
-        return [
-            'out_of_stock' => 'Out of Stock',
-            'low_stock' => 'Low Stock',
-            'in_stock' => 'In Stock'
-        ][$status];
+        $this->increment('stock_quantity', $quantity);
     }
 
-    // Get stock status color
-    public function getStockStatusColorAttribute()
+    /**
+     * Decrease stock quantity.
+     */
+    public function decreaseStock(int $quantity): bool
     {
-        $status = $this->stock_status;
-        return [
-            'out_of_stock' => 'red',
-            'low_stock' => 'yellow',
-            'in_stock' => 'green'
-        ][$status];
+        if ($this->stock_quantity >= $quantity) {
+            $this->decrement('stock_quantity', $quantity);
+            return true;
+        }
+        return false;
     }
 }

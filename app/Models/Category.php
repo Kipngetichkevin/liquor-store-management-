@@ -10,39 +10,115 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'is_active'];
-
-    protected $casts = [
-        'is_active' => 'boolean',
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'description',
+        'status',
+        'image',
+        'parent_id',
+        'slug',          // <-- ADD THIS
+        'created_by',
+        'updated_by'
     ];
 
-    public function setNameAttribute($value)
+    /**
+     * Default attribute values.
+     */
+    protected $attributes = [
+        'status' => 'active',
+    ];
+
+    /**
+     * Boot the model – auto‑generate slug when creating a category.
+     */
+    protected static function boot()
     {
-        $this->attributes['name'] = $value;
-        $this->attributes['slug'] = Str::slug($value);
+        parent::boot();
+
+        static::creating(function ($category) {
+            if (empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
+
+        // Optional: update slug when name changes
+        static::updating(function ($category) {
+            if ($category->isDirty('name') && !$category->isDirty('slug')) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
     }
 
-    // Relationship with Products
+    // ─────────────────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Get the products for the category.
+     */
     public function products()
     {
         return $this->hasMany(Product::class);
     }
 
-    // Scope for active categories
+    /**
+     * Get the parent category.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    /**
+     * Get the subcategories.
+     */
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SCOPES
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Scope for active categories.
+     */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('status', 'active');
     }
 
-    // Get categories with product count
-    public function scopeWithProductCount($query)
+    /**
+     * Scope for root categories (no parent).
+     */
+    public function scopeRoot($query)
     {
-        return $query->withCount('products');
+        return $query->whereNull('parent_id');
     }
 
-    // Check if category has products
-    public function hasProducts()
+    // ─────────────────────────────────────────────────────────
+    // ACCESSORS
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Get the total products count.
+     */
+    public function getTotalProductsAttribute()
     {
-        return $this->products()->exists();
+        return $this->products()->count();
+    }
+
+    /**
+     * Get the total active products count.
+     */
+    public function getActiveProductsCountAttribute()
+    {
+        return $this->products()->where('status', 'active')->count();
     }
 }
