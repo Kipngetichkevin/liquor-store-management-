@@ -28,7 +28,7 @@ class Product extends Model
         'barcode',
         'brand',
         'image',
-        'stock_quantity',      // Single source of truth for stock
+        'stock_quantity',
         'min_stock_level',
         'created_by',
         'updated_by',
@@ -72,11 +72,19 @@ class Product extends Model
     }
 
     /**
-     * Get the supplier for this product (if any).
+     * Get the supplier for this product.
      */
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Get all stock movements for this product.
+     */
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -116,7 +124,7 @@ class Product extends Model
     }
 
     // ─────────────────────────────────────────────────────────
-    // ACCESSORS & MUTATORS
+    // ACCESSORS
     // ─────────────────────────────────────────────────────────
 
     /**
@@ -128,7 +136,7 @@ class Product extends Model
     }
 
     /**
-     * Get the formatted cost price with currency symbol.
+     * Get the formatted cost price.
      */
     public function getFormattedCostPriceAttribute(): string
     {
@@ -165,7 +173,6 @@ class Product extends Model
         $random = strtoupper(substr(uniqid(), -4));
         $sku = $prefix . '-' . $timestamp . '-' . $random;
 
-        // Ensure uniqueness
         while (self::where('sku', $sku)->exists()) {
             $sku = $prefix . '-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
         }
@@ -174,22 +181,36 @@ class Product extends Model
     }
 
     /**
-     * Increase stock quantity.
+     * Update stock quantity and log the movement.
+     *
+     * @param int $quantity Change amount (positive for addition, negative for removal)
+     * @param string $type Type of movement (purchase, sale, adjustment, return, damage, expired)
+     * @param string|null $reference Optional reference (e.g., PO number, invoice)
+     * @param string|null $reason Optional reason
+     * @return bool Success or failure (e.g., would go below zero)
      */
-    public function increaseStock(int $quantity): void
+    public function updateStock(int $quantity, string $type, ?string $reference = null, ?string $reason = null): bool
     {
-        $this->increment('stock_quantity', $quantity);
-    }
+        $old = $this->stock_quantity;
+        $new = $old + $quantity;
 
-    /**
-     * Decrease stock quantity.
-     */
-    public function decreaseStock(int $quantity): bool
-    {
-        if ($this->stock_quantity >= $quantity) {
-            $this->decrement('stock_quantity', $quantity);
-            return true;
+        // Prevent negative stock
+        if ($new < 0) {
+            return false;
         }
-        return false;
+
+        $this->stock_quantity = $new;
+        $this->save();
+
+        $this->stockMovements()->create([
+            'user_id' => auth()->id(),
+            'quantity_change' => $quantity,
+            'new_quantity' => $new,
+            'type' => $type,
+            'reference' => $reference,
+            'reason' => $reason,
+        ]);
+
+        return true;
     }
 }

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\InventoryController; // 👈 ADD THIS
 
 /*
 |--------------------------------------------------------------------------
@@ -49,7 +51,7 @@ Route::prefix('products')->group(function () {
     Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     
-    // 👇 ADD THIS LINE – Quick stock update
+    // Quick stock update
     Route::patch('/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
 });
 
@@ -62,6 +64,18 @@ Route::prefix('categories')->group(function () {
     Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+});
+
+// Supplier routes
+Route::resource('suppliers', SupplierController::class);
+
+// 👇 INVENTORY MANAGEMENT ROUTES (ADDED HERE)
+Route::prefix('inventory')->name('inventory.')->group(function () {
+    Route::get('/', [InventoryController::class, 'index'])->name('index');
+    Route::get('/product/{product}/adjust', [InventoryController::class, 'adjustForm'])->name('adjust.form');
+    Route::post('/product/{product}/adjust', [InventoryController::class, 'adjust'])->name('adjust');
+    Route::get('/product/{product}/history', [InventoryController::class, 'history'])->name('history');
+    Route::post('/product/{product}/quick-add', [InventoryController::class, 'quickAdd'])->name('quick-add');
 });
 
 // Fallback route

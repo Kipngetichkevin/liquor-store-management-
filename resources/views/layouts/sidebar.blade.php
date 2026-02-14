@@ -26,27 +26,31 @@
                 </a>
             </li>
 
-            <!-- Divider -->
+            <!-- Suppliers (ACTIVE) -->
+            <li>
+                <a href="{{ route('suppliers.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('suppliers.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                    <i class="fas fa-truck w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                    <span class="ml-3 sidebar-text">Suppliers</span>
+                    @if(request()->routeIs('suppliers.*'))
+                        <span class="ml-auto w-2 h-2 bg-blue-600 rounded-full"></span>
+                    @endif
+                </a>
+            </li>
+
+            <!-- Inventory (ACTIVE) – NEW -->
+            <li>
+                <a href="{{ route('inventory.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('inventory.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                    <i class="fas fa-boxes w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                    <span class="ml-3 sidebar-text">Inventory</span>
+                    @if(request()->routeIs('inventory.*'))
+                        <span class="ml-auto w-2 h-2 bg-blue-600 rounded-full"></span>
+                    @endif
+                </a>
+            </li>
+
+            <!-- Divider – Coming Soon Modules -->
             <li class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                 <span class="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400 sidebar-text">Coming Soon</span>
-            </li>
-
-            <!-- Suppliers (disabled for now) -->
-            <li>
-                <a href="#" class="flex items-center p-3 text-gray-400 rounded-lg cursor-not-allowed group">
-                    <i class="fas fa-truck w-5 h-5 text-gray-400"></i>
-                    <span class="ml-3 sidebar-text">Suppliers</span>
-                    <span class="ml-auto text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900 dark:text-yellow-300">Soon</span>
-                </a>
-            </li>
-
-            <!-- Inventory (disabled) -->
-            <li>
-                <a href="#" class="flex items-center p-3 text-gray-400 rounded-lg cursor-not-allowed group">
-                    <i class="fas fa-boxes w-5 h-5 text-gray-400"></i>
-                    <span class="ml-3 sidebar-text">Inventory</span>
-                    <span class="ml-auto text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900 dark:text-yellow-300">Soon</span>
-                </a>
             </li>
 
             <!-- Sales (disabled) -->
@@ -94,3 +98,46 @@
         </ul>
     </div>
 </aside>
+
+<style>
+    /* Sidebar collapsed state styling */
+    .sidebar-collapsed #sidebar {
+        width: 5rem !important;
+    }
+    .sidebar-collapsed #sidebar .sidebar-text {
+        display: none;
+    }
+    .sidebar-collapsed #sidebar .ml-auto {
+        display: none;
+    }
+    .sidebar-collapsed #sidebar .fixed.bottom-0 {
+        width: 5rem !important;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .sidebar-collapsed #sidebar .fixed.bottom-0 .sidebar-text {
+        display: none;
+    }
+</style>
+
+<script>
+    // Dark mode toggle (must be globally accessible)
+    window.toggleDarkMode = function() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            html.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    };
+
+    // Set initial theme
+    document.addEventListener('DOMContentLoaded', function() {
+        const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+    });
+</script>
