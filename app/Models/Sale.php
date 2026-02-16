@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
@@ -13,16 +11,18 @@ class Sale extends Model
 
     protected $fillable = [
         'invoice_number',
-        'customer_id',
         'user_id',
+        'customer_id',
         'subtotal',
         'tax_amount',
         'discount_amount',
         'total_amount',
+        'amount_paid',
+        'change',
         'payment_method',
         'payment_status',
         'status',
-        'notes'
+        'notes',
     ];
 
     protected $casts = [
@@ -30,47 +30,40 @@ class Sale extends Model
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
+        'change' => 'decimal:2',
     ];
 
-    /**
-     * Get the customer that owns the sale.
-     */
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    /**
-     * Get the user (cashier) that made the sale.
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get all items for the sale.
-     */
-    public function items(): HasMany
+    public function items()
     {
         return $this->hasMany(SaleItem::class);
     }
 
-    /**
-     * Generate invoice number.
-     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public static function generateInvoiceNumber(): string
     {
+        $prefix = 'INV';
         $date = now()->format('Ymd');
-        $lastSale = self::where('invoice_number', 'like', "INV-{$date}-%")->latest()->first();
-        
-        if ($lastSale) {
-            $lastNumber = (int) substr($lastSale->invoice_number, -4);
+        $last = self::where('invoice_number', 'like', "{$prefix}-{$date}-%")
+            ->orderBy('invoice_number', 'desc')
+            ->first();
+
+        if ($last) {
+            $lastNumber = (int) substr($last->invoice_number, -4);
             $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
             $newNumber = '0001';
         }
-        
-        return "INV-{$date}-{$newNumber}";
+
+        return "{$prefix}-{$date}-{$newNumber}";
     }
 }

@@ -26,7 +26,7 @@
                 </a>
             </li>
 
-            <!-- Suppliers (ACTIVE) -->
+            <!-- Suppliers -->
             <li>
                 <a href="{{ route('suppliers.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('suppliers.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-truck w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -37,7 +37,7 @@
                 </a>
             </li>
 
-            <!-- Inventory (ACTIVE) – NEW -->
+            <!-- Inventory -->
             <li>
                 <a href="{{ route('inventory.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('inventory.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-boxes w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -48,12 +48,34 @@
                 </a>
             </li>
 
+            <!-- Purchase Orders (NEW) -->
+            <li>
+                <a href="{{ route('purchase-orders.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('purchase-orders.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                    <i class="fas fa-shopping-cart w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                    <span class="ml-3 sidebar-text">Purchase Orders</span>
+                    @if(request()->routeIs('purchase-orders.*'))
+                        <span class="ml-auto w-2 h-2 bg-blue-600 rounded-full"></span>
+                    @endif
+                </a>
+            </li>
+
+            <!-- POS -->
+            <li>
+                <a href="{{ route('pos.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('pos.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                    <i class="fas fa-shopping-cart w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                    <span class="ml-3 sidebar-text">Point of Sale</span>
+                    @if(request()->routeIs('pos.*'))
+                        <span class="ml-auto w-2 h-2 bg-blue-600 rounded-full"></span>
+                    @endif
+                </a>
+            </li>
+
             <!-- Divider – Coming Soon Modules -->
             <li class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                 <span class="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400 sidebar-text">Coming Soon</span>
             </li>
 
-            <!-- Sales (disabled) -->
+            <!-- Sales (disabled) – you may keep or remove -->
             <li>
                 <a href="#" class="flex items-center p-3 text-gray-400 rounded-lg cursor-not-allowed group">
                     <i class="fas fa-shopping-cart w-5 h-5 text-gray-400"></i>

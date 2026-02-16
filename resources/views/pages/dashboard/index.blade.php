@@ -66,12 +66,12 @@
             </div>
         </div>
 
-        <!-- Today's Sales Card (Placeholder) -->
+        <!-- Today's Sales Card -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 dark:text-gray-300 text-sm font-medium mb-1">Today's Sales</p>
-                    <h3 class="text-3xl font-bold text-gray-800 dark:text-white">${{ number_format($todayRevenue, 2) }}</h3>
+                    <h3 class="text-3xl font-bold text-gray-800 dark:text-white">KSh {{ number_format($todayRevenue, 2) }}</h3>
                     <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
                         <span id="todaySales">{{ $todaySales }}</span> Transactions
                     </p>
@@ -81,11 +81,14 @@
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <span class="text-gray-400 dark:text-gray-500 text-sm italic">Sales module coming soon</span>
+                <a href="{{ route('pos.index') }}" class="text-purple-600 dark:text-purple-400 text-sm font-medium hover:underline flex items-center">
+                    New Sale
+                    <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                </a>
             </div>
         </div>
 
-        <!-- Low Stock Alert Card (Placeholder) -->
+        <!-- Low Stock Alert Card -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -100,7 +103,10 @@
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <span class="text-gray-400 dark:text-gray-500 text-sm italic">Inventory module coming soon</span>
+                <a href="{{ route('inventory.index') }}" class="text-red-600 dark:text-red-400 text-sm font-medium hover:underline flex items-center">
+                    View Inventory
+                    <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                </a>
             </div>
         </div>
     </div>
@@ -125,25 +131,21 @@
             </div>
         </div>
 
-        <!-- Sales Trend Chart (Placeholder) -->
+        <!-- Sales Trend Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Sales Trend (Weekly)</h3>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Sales Trend (This Week)</h3>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-calendar-alt mr-1"></i> This Week
+                    <i class="fas fa-calendar-alt mr-1"></i> {{ \Carbon\Carbon::now()->startOfWeek()->format('M d') }} - {{ \Carbon\Carbon::now()->endOfWeek()->format('M d, Y') }}
                 </div>
             </div>
-            <div class="h-80 flex items-center justify-center">
-                <div class="text-center">
-                    <i class="fas fa-chart-line text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                    <p class="text-gray-500 dark:text-gray-400">Sales data will appear here</p>
-                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Start making sales to see trends</p>
-                </div>
+            <div class="h-80">
+                <canvas id="salesChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Recent Activities & Quick Actions -->
+    <!-- Recent Activities & Top Products -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Recent Activities -->
         <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -173,72 +175,33 @@
                 </div>
                 @endforelse
             </div>
-            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <a href="#" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline flex items-center justify-center">
-                    View All Activities
-                    <i class="fas fa-arrow-right ml-2"></i>
-                </a>
-            </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Top Selling Products -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Quick Actions</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <a href="{{ route('products.create') }}" class="flex flex-col items-center justify-center p-5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl border border-blue-100 dark:border-blue-800 transition-colors group">
-                    <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <i class="fas fa-plus text-blue-600 dark:text-blue-400 text-xl"></i>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Top Selling Products</h3>
+            <div class="space-y-4">
+                @forelse($topProducts ?? [] as $item)
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                            <i class="fas fa-wine-bottle text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">{{ $item->product->name ?? 'Unknown' }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $item->total_quantity }} units sold</p>
+                        </div>
                     </div>
-                    <span class="font-medium text-gray-800 dark:text-white">Add Product</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">New liquor item</span>
-                </a>
-
-                <a href="{{ route('categories.create') }}" class="flex flex-col items-center justify-center p-5 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl border border-green-100 dark:border-green-800 transition-colors group">
-                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <i class="fas fa-tag text-green-600 dark:text-green-400 text-xl"></i>
-                    </div>
-                    <span class="font-medium text-gray-800 dark:text-white">Add Category</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">New category</span>
-                </a>
-
-                <a href="{{ route('products.index') }}" class="flex flex-col items-center justify-center p-5 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-xl border border-purple-100 dark:border-purple-800 transition-colors group">
-                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <i class="fas fa-list text-purple-600 dark:text-purple-400 text-xl"></i>
-                    </div>
-                    <span class="font-medium text-gray-800 dark:text-white">View Products</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">All items</span>
-                </a>
-
-                <a href="#" class="flex flex-col items-center justify-center p-5 bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 rounded-xl border border-yellow-100 dark:border-yellow-800 transition-colors group">
-                    <div class="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <i class="fas fa-chart-bar text-yellow-600 dark:text-yellow-400 text-xl"></i>
-                    </div>
-                    <span class="font-medium text-gray-800 dark:text-white">Reports</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">View analytics</span>
-                </a>
-            </div>
-            
-            <!-- System Status -->
-            <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">System Status</h4>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Database</span>
-                        <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full">Connected</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Products Module</span>
-                        <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full">Active</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Categories Module</span>
-                        <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full">Active</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Sales Module</span>
-                        <span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-full">Coming Soon</span>
+                    <div class="text-right">
+                        <p class="font-bold text-gray-800 dark:text-white">KSh {{ number_format($item->total_revenue, 2) }}</p>
                     </div>
                 </div>
+                @empty
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-line text-3xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400">No sales yet</p>
+                </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -246,7 +209,6 @@
 
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <script>
     // Chart colors for dark/light mode
@@ -269,9 +231,9 @@
         const colors = getChartColors();
         
         const data = {
-            labels: @json($categoryNames),
+            labels: @json($categoryNames ?? []),
             datasets: [{
-                data: @json($categoryCounts),
+                data: @json($categoryCounts ?? []),
                 backgroundColor: colors.backgroundColors,
                 borderColor: colors.borderColor,
                 borderWidth: 1
@@ -287,9 +249,7 @@
                     labels: {
                         color: colors.textColor,
                         padding: 20,
-                        font: {
-                            size: 12
-                        }
+                        font: { size: 12 }
                     }
                 },
                 tooltip: {
@@ -323,11 +283,65 @@
         });
     };
 
+    // Initialize Sales Chart
+    let salesChart;
+    const initSalesChart = () => {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const colors = getChartColors();
+        
+        const salesData = @json($weeklySales ?? []);
+        const labels = salesData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { weekday: 'short' });
+        });
+        const revenues = salesData.map(item => item.revenue);
+        
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (KSh)',
+                    data: revenues,
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'KSh ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KSh ' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    };
+
     // Change chart type
     window.changeChartType = function(type) {
         initCategoryChart(type);
         // Update button states
-        document.querySelectorAll('#categoryChart').parentElement.previousElementSibling.querySelectorAll('button').forEach(btn => {
+        const buttons = document.querySelectorAll('#categoryChart').parentElement.previousElementSibling.querySelectorAll('button');
+        buttons.forEach(btn => {
             if (btn.textContent.toLowerCase() === type) {
                 btn.className = 'px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg';
             } else {
@@ -353,7 +367,6 @@
             // Update time
             document.querySelector('span.text-gray-500').textContent = `Last updated: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
             
-            // Show success message
             showNotification('Dashboard updated successfully', 'success');
         } catch (error) {
             showNotification('Failed to update dashboard', 'error');
@@ -366,7 +379,6 @@
 
     // Show notification
     function showNotification(message, type = 'info') {
-        // Create notification element
         const notification = document.createElement('div');
         notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-0 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
         notification.innerHTML = `
@@ -378,16 +390,16 @@
         
         document.body.appendChild(notification);
         
-        // Remove after 3 seconds
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
 
-    // Initialize chart on page load
+    // Initialize charts on page load
     document.addEventListener('DOMContentLoaded', function() {
         initCategoryChart('pie');
+        initSalesChart();
         
         // Auto-refresh dashboard every 30 seconds
         setInterval(() => {
@@ -398,9 +410,8 @@
     });
 </script>
 
-<!-- Dark Mode Toggle Script (if using TailAdmin's dark mode) -->
+<!-- Dark Mode Toggle Script -->
 <script>
-    // Check for dark mode preference
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
     } else {
@@ -418,21 +429,8 @@
         to { transform: rotate(360deg); }
     }
     
-    .chart-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-    
-    /* Smooth transitions for dark mode */
     .transition-colors {
         transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    }
-    
-    /* Card hover effects */
-    .hover-lift:hover {
-        transform: translateY(-4px);
-        transition: transform 0.2s ease;
     }
 </style>
 @endsection

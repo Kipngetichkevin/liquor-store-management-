@@ -5,35 +5,28 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\InventoryController; // 👈 ADD THIS
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\PosController;
+use App\Http\Controllers\PurchaseOrderController; // 👈 ADD THIS
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
-// Public routes (if any)
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
-// Authentication routes (if using Laravel Breeze/Jetstream)
+// Authentication routes
 if (file_exists(base_path('routes/auth.php'))) {
     require base_path('routes/auth.php');
 }
 
 // Dashboard routes
 Route::prefix('dashboard')->group(function () {
-    // Main dashboard page
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Dashboard API endpoints
     Route::get('/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
     Route::get('/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
     Route::get('/recent-activities', [DashboardController::class, 'getRecentActivitiesData'])->name('dashboard.recent-activities');
@@ -50,8 +43,6 @@ Route::prefix('products')->group(function () {
     Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
-    
-    // Quick stock update
     Route::patch('/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
 });
 
@@ -69,7 +60,7 @@ Route::prefix('categories')->group(function () {
 // Supplier routes
 Route::resource('suppliers', SupplierController::class);
 
-// 👇 INVENTORY MANAGEMENT ROUTES (ADDED HERE)
+// Inventory routes
 Route::prefix('inventory')->name('inventory.')->group(function () {
     Route::get('/', [InventoryController::class, 'index'])->name('index');
     Route::get('/product/{product}/adjust', [InventoryController::class, 'adjustForm'])->name('adjust.form');
@@ -77,6 +68,24 @@ Route::prefix('inventory')->name('inventory.')->group(function () {
     Route::get('/product/{product}/history', [InventoryController::class, 'history'])->name('history');
     Route::post('/product/{product}/quick-add', [InventoryController::class, 'quickAdd'])->name('quick-add');
 });
+
+// POS routes
+Route::prefix('pos')->name('pos.')->group(function () {
+    Route::get('/', [PosController::class, 'index'])->name('index');
+    Route::post('/cart/add', [PosController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update', [PosController::class, 'updateCart'])->name('cart.update');
+    Route::post('/cart/remove', [PosController::class, 'removeFromCart'])->name('cart.remove');
+    Route::post('/cart/clear', [PosController::class, 'clearCart'])->name('cart.clear');
+    Route::post('/checkout', [PosController::class, 'store'])->name('checkout');
+    Route::get('/receipt/{sale}', [PosController::class, 'receipt'])->name('receipt');
+    Route::get('/search', [PosController::class, 'search'])->name('search');
+});
+
+// 👇 PURCHASE ORDERS ROUTES (ADD HERE)
+Route::resource('purchase-orders', PurchaseOrderController::class);
+Route::post('/purchase-orders/{purchaseOrder}/mark-ordered', [PurchaseOrderController::class, 'markOrdered'])->name('purchase-orders.mark-ordered');
+Route::get('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
+Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
 
 // Fallback route
 Route::fallback(function () {

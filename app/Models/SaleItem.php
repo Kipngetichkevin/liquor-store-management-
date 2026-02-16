@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
 
 class SaleItem extends Model
 {
@@ -15,40 +14,23 @@ class SaleItem extends Model
         'product_id',
         'quantity',
         'unit_price',
-        'total_price'
+        'subtotal',
+        'total_price',
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
         'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2'
+        'subtotal' => 'decimal:2',
+        'total_price' => 'decimal:2',
     ];
 
-    /**
-     * Get the sale that owns the item.
-     */
-    public function sale(): BelongsTo
+    public function sale()
     {
         return $this->belongsTo(Sale::class);
     }
 
-    /**
-     * Get the product that owns the item.
-     */
-    public function product(): BelongsTo
+    public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    /**
-     * Calculate total price before saving.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::saving(function ($saleItem) {
-            $saleItem->total_price = $saleItem->quantity * $saleItem->unit_price;
-        });
     }
 }
