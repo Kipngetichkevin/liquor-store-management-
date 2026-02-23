@@ -1,0 +1,257 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'is_active',
+        'last_login_at',
+        'last_login_ip',
+        'phone',
+        'employee_id',
+        'created_by',
+        'updated_by',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+        'last_login_at' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'role' => 'cashier',
+        'is_active' => true,
+    ];
+
+    /**
+     * Role constants
+     */
+    const ROLE_ADMIN = 'admin';
+    const ROLE_MANAGER = 'manager';
+    const ROLE_CASHIER = 'cashier';
+    const ROLE_STOCK_KEEPER = 'stock_keeper';
+
+    /**
+     * Get all available roles.
+     */
+    public static function getRoles(): array
+    {
+        return [
+            self::ROLE_ADMIN => 'Admin',
+            self::ROLE_MANAGER => 'Manager',
+            self::ROLE_CASHIER => 'Cashier',
+            self::ROLE_STOCK_KEEPER => 'Stock Keeper',
+        ];
+    }
+
+    /**
+     * Check if user has a specific role.
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
+     * Check if user has any of the given roles.
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
+
+    /**
+     * Check if user is admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if user is manager.
+     */
+    public function isManager(): bool
+    {
+        return $this->role === self::ROLE_MANAGER;
+    }
+
+    /**
+     * Check if user is cashier.
+     */
+    public function isCashier(): bool
+    {
+        return $this->role === self::ROLE_CASHIER;
+    }
+
+    /**
+     * Check if user is stock keeper.
+     */
+    public function isStockKeeper(): bool
+    {
+        return $this->role === self::ROLE_STOCK_KEEPER;
+    }
+
+    /**
+     * Get role badge HTML.
+     */
+    public function getRoleBadgeAttribute(): string
+    {
+        $colors = [
+            self::ROLE_ADMIN => 'bg-red-100 text-red-800',
+            self::ROLE_MANAGER => 'bg-purple-100 text-purple-800',
+            self::ROLE_CASHIER => 'bg-green-100 text-green-800',
+            self::ROLE_STOCK_KEEPER => 'bg-blue-100 text-blue-800',
+        ];
+
+        $color = $colors[$this->role] ?? 'bg-gray-100 text-gray-800';
+        $roleName = self::getRoles()[$this->role] ?? ucfirst($this->role);
+        
+        return '<span class="px-2 py-1 text-xs font-medium ' . $color . ' rounded-full">' . $roleName . '</span>';
+    }
+
+    /**
+     * Get status badge HTML.
+     */
+    public function getStatusBadgeAttribute(): string
+    {
+        if ($this->is_active) {
+            return '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Active</span>';
+        }
+        
+        return '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Inactive</span>';
+    }
+
+    /**
+     * Check if user can access a module.
+     */
+    public function canAccess(string $module, string $action = 'view'): bool
+    {
+        // Admin can do everything
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $permissions = $this->getPermissions();
+
+        return $permissions[$module][$action] ?? false;
+    }
+
+    /**
+     * Get user permissions based on role.
+     */
+    public function getPermissions(): array
+    {
+        return match($this->role) {
+            self::ROLE_MANAGER => [
+                'dashboard' => ['view' => true],
+                'products' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'categories' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'suppliers' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'inventory' => ['view' => true, 'adjust' => true],
+                'purchase_orders' => ['view' => true, 'create' => true, 'edit' => true, 'approve' => true],
+                'pos' => ['view' => true, 'process' => true],
+                'sales' => ['view' => true, 'export' => true, 'void' => true],
+                'customers' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'reports' => ['view' => true, 'export' => true],
+                'users' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+            self::ROLE_CASHIER => [
+                'dashboard' => ['view' => true],
+                'products' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'inventory' => ['view' => true, 'adjust' => false],
+                'pos' => ['view' => true, 'process' => true],
+                'sales' => ['view' => true, 'export' => false, 'void' => false],
+                'customers' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'reports' => ['view' => false, 'export' => false],
+                'users' => ['view' => false, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+            self::ROLE_STOCK_KEEPER => [
+                'dashboard' => ['view' => true],
+                'products' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'categories' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'suppliers' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'inventory' => ['view' => true, 'adjust' => true],
+                'purchase_orders' => ['view' => true, 'create' => true, 'edit' => true, 'approve' => false],
+                'pos' => ['view' => false, 'process' => false],
+                'sales' => ['view' => true, 'export' => false, 'void' => false],
+                'customers' => ['view' => false, 'create' => false, 'edit' => false, 'delete' => false],
+                'reports' => ['view' => true, 'export' => false],
+                'users' => ['view' => false, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+            default => [
+                'dashboard' => ['view' => true],
+                'products' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'inventory' => ['view' => true, 'adjust' => false],
+                'pos' => ['view' => true, 'process' => true],
+                'sales' => ['view' => true, 'export' => false, 'void' => false],
+                'customers' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'reports' => ['view' => false, 'export' => false],
+                'users' => ['view' => false, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+        };
+    }
+
+    /**
+     * Log user activity.
+     */
+    public function logActivity(string $action, string $module, ?string $description = null, ?array $oldValues = null, ?array $newValues = null): void
+    {
+        ActivityLog::create([
+            'user_id' => $this->id,
+            'user_name' => $this->name,
+            'user_role' => $this->role,
+            'action' => $action,
+            'module' => $module,
+            'description' => $description,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+    }
+
+    /**
+     * Get the user's activity logs.
+     */
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * Get the creator of this user.
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the updater of this user.
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+}

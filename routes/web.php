@@ -7,7 +7,11 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
-use App\Http\Controllers\PurchaseOrderController; // 👈 ADD THIS
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SalesImportController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\UserController; // 👈 ADD THIS
 
 /*
 |--------------------------------------------------------------------------
@@ -79,13 +83,52 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::post('/checkout', [PosController::class, 'store'])->name('checkout');
     Route::get('/receipt/{sale}', [PosController::class, 'receipt'])->name('receipt');
     Route::get('/search', [PosController::class, 'search'])->name('search');
+    
+    // POS Customer routes
+    Route::get('/search-customers', [PosController::class, 'searchCustomers'])->name('search-customers');
+    Route::post('/select-customer', [PosController::class, 'selectCustomer'])->name('select-customer');
+    Route::post('/clear-customer', [PosController::class, 'clearCustomer'])->name('clear-customer');
+    Route::post('/quick-add-customer', [PosController::class, 'quickAddCustomer'])->name('quick-add-customer');
 });
 
-// 👇 PURCHASE ORDERS ROUTES (ADD HERE)
+// Purchase Orders routes
 Route::resource('purchase-orders', PurchaseOrderController::class);
 Route::post('/purchase-orders/{purchaseOrder}/mark-ordered', [PurchaseOrderController::class, 'markOrdered'])->name('purchase-orders.mark-ordered');
 Route::get('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
 Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+
+// Sales Reports routes
+Route::prefix('sales')->name('sales.')->group(function () {
+    Route::get('/', [SaleController::class, 'index'])->name('index');
+    Route::get('/daily', [SaleController::class, 'daily'])->name('daily');
+    Route::get('/weekly', [SaleController::class, 'weekly'])->name('weekly');
+    Route::get('/weekly/export-csv', [SaleController::class, 'exportWeeklyCsv'])->name('weekly.export-csv');
+    Route::get('/monthly', [SaleController::class, 'monthly'])->name('monthly');
+    Route::get('/monthly/export-csv', [SaleController::class, 'exportMonthlyCsv'])->name('monthly.export-csv');
+    
+    // Import routes
+    Route::get('/import', [SalesImportController::class, 'showForm'])->name('import.form');
+    Route::post('/import/stock', [SalesImportController::class, 'uploadStock'])->name('import.stock');
+    Route::post('/import/cost', [SalesImportController::class, 'uploadCost'])->name('import.cost');
+    Route::get('/import/analyze', [SalesImportController::class, 'analyze'])->name('import.analyze');
+    
+    Route::get('/{sale}', [SaleController::class, 'show'])->name('show');
+    Route::post('/{sale}/void', [SaleController::class, 'void'])->name('void');
+    Route::get('/{sale}/print', [SaleController::class, 'print'])->name('print');
+});
+
+// Customer routes
+Route::resource('customers', CustomerController::class);
+Route::get('/customers/loyalty/dashboard', [CustomerController::class, 'loyalty'])->name('customers.loyalty');
+Route::get('/api/customers/search', [CustomerController::class, 'search'])->name('customers.search');
+
+// 👇 USER MANAGEMENT ROUTES (NEW)
+Route::resource('users', UserController::class);
+Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+Route::get('/users/{user}/activity', [UserController::class, 'activity'])->name('users.activity');
+Route::get('/activity-logs', [UserController::class, 'allActivity'])->name('users.activity.all');
+Route::get('/profile', [UserController::class, 'profile'])->name('users.profile');
+Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('users.profile.update');
 
 // Fallback route
 Route::fallback(function () {
