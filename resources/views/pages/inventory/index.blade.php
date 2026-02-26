@@ -134,12 +134,21 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex space-x-2">
-                                            <a href="{{ route('inventory.history', $product) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="History">
-                                                <i class="fas fa-history"></i>
-                                            </a>
-                                            <a href="{{ route('inventory.adjust.form', $product) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Adjust Stock">
-                                                <i class="fas fa-balance-scale"></i>
-                                            </a>
+                                            <!-- History – admin, manager, stock keeper -->
+                                            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                                                <a href="{{ route('inventory.history', $product) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="History">
+                                                    <i class="fas fa-history"></i>
+                                                </a>
+                                            @endif
+
+                                            <!-- Adjust Stock – admin, manager, stock keeper -->
+                                            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                                                <a href="{{ route('inventory.adjust.form', $product) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Adjust Stock">
+                                                    <i class="fas fa-balance-scale"></i>
+                                                </a>
+                                            @endif
+
+                                            <!-- View Product – everyone (view only) -->
                                             <a href="{{ route('products.show', $product) }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300" title="View Product">
                                                 <i class="fas fa-eye"></i>
                                             </a>

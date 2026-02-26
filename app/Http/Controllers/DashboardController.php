@@ -12,34 +12,22 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the dashboard with real data
-     */
     public function index()
     {
         try {
-            // 1. BASIC COUNTS
             $totalProducts = Product::count();
             $totalCategories = Category::count();
             $activeProducts = Product::where('status', 'active')->count();
             
-            // 2. PRODUCTS BY CATEGORY FOR CHART
             $productsByCategory = Category::withCount('products')->get();
             
-            // 3. RECENT ACTIVITIES
-            $recentProducts = Product::with('category')
-                ->latest()
-                ->take(5)
-                ->get();
-                
+            $recentProducts = Product::with('category')->latest()->take(5)->get();
             $recentCategories = Category::latest()->take(5)->get();
             
-            // 4. TODAY'S SALES - FIXED
             $today = Carbon::today();
             $todaySales = Sale::whereDate('created_at', $today)->count();
             $todayRevenue = Sale::whereDate('created_at', $today)->sum('total_amount');
             
-            // 5. WEEKLY SALES TREND (for chart)
             $weeklySales = Sale::select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('COUNT(*) as count'),
@@ -53,14 +41,12 @@ class DashboardController extends Controller
                 ->orderBy('date')
                 ->get();
             
-            // 6. INVENTORY ALERTS
             $lowStockItems = Product::whereColumn('stock_quantity', '<=', 'min_stock_level')
                 ->with('category')
                 ->limit(5)
                 ->get();
             $totalLowStock = Product::whereColumn('stock_quantity', '<=', 'min_stock_level')->count();
             
-            // 7. TOP SELLING PRODUCTS - FIXED
             $topProducts = SaleItem::select(
                     'product_id',
                     DB::raw('SUM(quantity) as total_quantity'),
@@ -72,14 +58,11 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
             
-            // 8. PREPARE DATA FOR CHARTS
             $categoryNames = $productsByCategory->pluck('name')->toArray();
             $categoryCounts = $productsByCategory->pluck('products_count')->toArray();
             
-            // 9. PREPARE RECENT ACTIVITY LOG
             $activities = $this->getRecentActivities($recentProducts, $recentCategories);
             
-            // 10. SET BREADCRUMBS
             $breadcrumbs = [
                 ['title' => 'Dashboard', 'url' => route('dashboard')]
             ];
@@ -104,11 +87,7 @@ class DashboardController extends Controller
             ));
             
         } catch (\Exception $e) {
-            // Log the error for debugging
             \Log::error('Dashboard Error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            // Return dashboard with empty data
             return view('pages.dashboard.index', [
                 'totalProducts' => 0,
                 'totalCategories' => 0,
@@ -125,15 +104,11 @@ class DashboardController extends Controller
             ]);
         }
     }
-    
-    /**
-     * Get recent activities for the dashboard
-     */
+
     private function getRecentActivities($recentProducts, $recentCategories)
     {
         $activities = [];
         
-        // Add recent products
         foreach ($recentProducts as $product) {
             $activities[] = [
                 'type' => 'product',
@@ -146,7 +121,6 @@ class DashboardController extends Controller
             ];
         }
         
-        // Add recent categories
         foreach ($recentCategories as $category) {
             $activities[] = [
                 'type' => 'category',
@@ -159,17 +133,13 @@ class DashboardController extends Controller
             ];
         }
         
-        // Sort by time (newest first)
         usort($activities, function($a, $b) {
             return strtotime($b['time']) - strtotime($a['time']);
         });
         
         return array_slice($activities, 0, 8);
     }
-    
-    /**
-     * Get real-time stats for AJAX refresh
-     */
+
     public function getStats()
     {
         try {
@@ -205,17 +175,12 @@ class DashboardController extends Controller
             ]);
         }
     }
-    
-    /**
-     * Get chart data for AJAX
-     */
+
     public function getChartData()
     {
         try {
-            // Products by Category
             $productsByCategory = Category::withCount('products')->get();
             
-            // Weekly Sales
             $weeklySales = Sale::select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('SUM(total_amount) as revenue')
@@ -228,7 +193,6 @@ class DashboardController extends Controller
                 ->orderBy('date')
                 ->get();
             
-            // Top Products
             $topProducts = SaleItem::select(
                     'product_id',
                     DB::raw('SUM(quantity) as total_quantity'),

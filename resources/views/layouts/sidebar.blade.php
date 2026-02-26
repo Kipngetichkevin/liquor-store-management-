@@ -1,8 +1,8 @@
-<!-- Sidebar -->
+﻿<!-- Sidebar -->
 <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-16 transition-all duration-300 -translate-x-full bg-white border-r border-gray-200 md:translate-x-0 dark:bg-gray-800 dark:border-gray-700">
     <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
         <ul class="space-y-2 font-medium">
-            <!-- Dashboard -->
+            <!-- Dashboard (everyone) -->
             <li>
                 <a href="{{ route('dashboard') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('dashboard') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-tachometer-alt w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -10,7 +10,8 @@
                 </a>
             </li>
 
-            <!-- Products -->
+            <!-- Products – admin, manager, stock keeper -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
             <li>
                 <a href="{{ route('products.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('products.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-wine-bottle w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -20,8 +21,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- Categories -->
+            <!-- Categories – admin, manager, stock keeper -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
             <li>
                 <a href="{{ route('categories.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('categories.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-tags w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -31,8 +34,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- Suppliers -->
+            <!-- Suppliers – admin, manager, stock keeper -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
             <li>
                 <a href="{{ route('suppliers.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('suppliers.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-truck w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -42,8 +47,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- Inventory -->
+            <!-- Inventory – admin, manager, stock keeper -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
             <li>
                 <a href="{{ route('inventory.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('inventory.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-boxes w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -53,8 +60,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- Purchase Orders -->
+            <!-- Purchase Orders – admin, manager, stock keeper -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
             <li>
                 <a href="{{ route('purchase-orders.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('purchase-orders.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-shopping-cart w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -64,8 +73,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- POS -->
+            <!-- POS – admin, manager, cashier -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'cashier']))
             <li>
                 <a href="{{ route('pos.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('pos.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-shopping-cart w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -75,8 +86,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- CUSTOMERS -->
+            <!-- Customers – admin, manager, cashier -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager', 'cashier']))
             <li>
                 <a href="{{ route('customers.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('customers.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-users w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -86,8 +99,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- USERS (NEW) -->
+            <!-- Users – admin, manager -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager']))
             <li>
                 <a href="{{ route('users.index') }}" class="flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group {{ request()->routeIs('users.*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
                     <i class="fas fa-users-cog w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -97,8 +112,10 @@
                     @endif
                 </a>
             </li>
+            @endif
 
-            <!-- Sales Reports (with dropdown) -->
+            <!-- Sales Reports (existing dropdown) – admin, manager -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager']))
             <li x-data="{ open: {{ request()->routeIs('sales.*') ? 'true' : 'false' }} }">
                 <button @click="open = !open" class="flex items-center w-full p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group">
                     <i class="fas fa-chart-line w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
@@ -108,66 +125,69 @@
                 <ul x-show="open" x-collapse class="pl-4 mt-1 space-y-1">
                     <li>
                         <a href="{{ route('sales.index') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('sales.index') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                            <i class="fas fa-list w-4 h-4 mr-2"></i>
-                            <span>All Sales</span>
+                            <i class="fas fa-list w-4 h-4 mr-2"></i> All Sales
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('sales.daily') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('sales.daily') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                            <i class="fas fa-calendar-day w-4 h-4 mr-2"></i>
-                            <span>Daily Report</span>
+                            <i class="fas fa-calendar-day w-4 h-4 mr-2"></i> Daily Report
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('sales.weekly') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('sales.weekly') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                            <i class="fas fa-calendar-week w-4 h-4 mr-2"></i>
-                            <span>Weekly Report</span>
+                            <i class="fas fa-calendar-week w-4 h-4 mr-2"></i> Weekly Report
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('sales.monthly') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('sales.monthly') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                            <i class="fas fa-calendar-alt w-4 h-4 mr-2"></i>
-                            <span>Monthly Report</span>
+                            <i class="fas fa-calendar-alt w-4 h-4 mr-2"></i> Monthly Report
                         </a>
                     </li>
                     <!-- IMPORT LINK -->
                     <li>
                         <a href="{{ route('sales.import.form') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('sales.import*') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                            <i class="fas fa-upload w-4 h-4 mr-2"></i>
-                            <span>Import Sales Data</span>
+                            <i class="fas fa-upload w-4 h-4 mr-2"></i> Import Sales Data
                         </a>
                     </li>
                 </ul>
             </li>
+            @endif
 
-            <!-- Divider – Coming Soon Modules -->
-            <li class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                <span class="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400 sidebar-text">Coming Soon</span>
+            <!-- 👇 NEW REPORTS DROPDOWN – admin, manager -->
+            @if(in_array(auth()->user()->role, ['admin', 'manager']))
+            <li x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                <button @click="open = !open" class="flex items-center w-full p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group">
+                    <i class="fas fa-chart-bar w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                    <span class="flex-1 ml-3 text-left sidebar-text">Reports</span>
+                    <i class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <ul x-show="open" x-collapse class="pl-4 mt-1 space-y-1">
+                    <li>
+                        <a href="{{ route('reports.products') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('reports.products') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                            <i class="fas fa-cube w-4 h-4 mr-2"></i> Product Sales
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('reports.profit') }}" class="flex items-center p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 {{ request()->routeIs('reports.profit') ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                            <i class="fas fa-coins w-4 h-4 mr-2"></i> Profit & Loss
+                        </a>
+                    </li>
+                </ul>
             </li>
+            @endif
 
-            <!-- Reports (disabled) -->
+            <!-- Divider -->
+            <li class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700"></li>
+
+            <!-- Logout (everyone) -->
             <li>
-                <a href="#" class="flex items-center p-3 text-gray-400 rounded-lg cursor-not-allowed group">
-                    <i class="fas fa-chart-bar w-5 h-5 text-gray-400"></i>
-                    <span class="ml-3 sidebar-text">Reports</span>
-                    <span class="ml-auto text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900 dark:text-yellow-300">Soon</span>
-                </a>
-            </li>
-
-            <!-- System Info at bottom -->
-            <li class="fixed bottom-0 left-0 w-64 p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-all duration-300" style="width: inherit;">
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                    <div class="flex items-center mb-1">
-                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        <span class="sidebar-text">System Operational</span>
-                    </div>
-                    <div class="text-gray-400 dark:text-gray-500 sidebar-text">Version 1.0.0</div>
-                    <button onclick="toggleDarkMode()" class="mt-2 w-full flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white bg-gray-100 dark:bg-gray-700 rounded-lg">
-                        <i class="fas fa-moon dark:hidden mr-2"></i>
-                        <i class="fas fa-sun hidden dark:block mr-2"></i>
-                        <span class="sidebar-text">Toggle Theme</span>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="w-full flex items-center p-3 text-gray-900 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 group">
+                        <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></i>
+                        <span class="ml-3 sidebar-text">Logout</span>
                     </button>
-                </div>
+                </form>
             </li>
         </ul>
     </div>
@@ -197,7 +217,7 @@
     }
 </style>
 
-<!-- Alpine.js for dropdown (if not already included) -->
+<!-- Alpine.js for dropdowns -->
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 <script>

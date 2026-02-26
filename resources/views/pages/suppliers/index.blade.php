@@ -87,9 +87,11 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 sm:mb-0">Supplier List</h3>
-                <a href="{{ route('suppliers.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
-                    <i class="fas fa-plus mr-2"></i> Add Supplier
-                </a>
+                @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                    <a href="{{ route('suppliers.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
+                        <i class="fas fa-plus mr-2"></i> Add Supplier
+                    </a>
+                @endif
             </div>
 
             <!-- Suppliers Table -->
@@ -128,19 +130,28 @@
                                 <td class="px-6 py-4">{!! $supplier->status_badge !!}</td>
                                 <td class="px-6 py-4">
                                     <div class="flex space-x-2">
+                                        <!-- View – everyone can view -->
                                         <a href="{{ route('suppliers.show', $supplier) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="View">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('suppliers.edit', $supplier) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, 'Delete this supplier?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+
+                                        <!-- Edit – admin, manager, stock keeper -->
+                                        @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                                            <a href="{{ route('suppliers.edit', $supplier) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
+
+                                        <!-- Delete – only admin -->
+                                        @if(auth()->user()->role === 'admin')
+                                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, 'Delete this supplier?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -155,9 +166,11 @@
                         </div>
                         <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No suppliers found</h4>
                         <p class="text-gray-500 dark:text-gray-400 mb-4">Add your first supplier to get started.</p>
-                        <a href="{{ route('suppliers.create') }}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow">
-                            <i class="fas fa-plus mr-2"></i> Add Supplier
-                        </a>
+                        @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                            <a href="{{ route('suppliers.create') }}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow">
+                                <i class="fas fa-plus mr-2"></i> Add Supplier
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>

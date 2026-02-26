@@ -91,9 +91,11 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 sm:mb-0">Purchase Orders</h3>
-                <a href="{{ route('purchase-orders.create') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
-                    <i class="fas fa-plus mr-2"></i> New Purchase Order
-                </a>
+                @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                    <a href="{{ route('purchase-orders.create') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
+                        <i class="fas fa-plus mr-2"></i> New Purchase Order
+                    </a>
+                @endif
             </div>
 
             <!-- Orders Table -->
@@ -136,15 +138,20 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex space-x-2">
+                                            <!-- View – everyone who can access the page (admin, manager, stock keeper) -->
                                             <a href="{{ route('purchase-orders.show', $order) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="View">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            @if(in_array($order->status, ['draft', 'ordered']))
+
+                                            <!-- Edit – admin, manager, stock keeper (but only if status allows) -->
+                                            @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']) && in_array($order->status, ['draft', 'ordered']))
                                                 <a href="{{ route('purchase-orders.edit', $order) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                             @endif
-                                            @if($order->status == 'draft')
+
+                                            <!-- Delete – only admin, and only if draft -->
+                                            @if(auth()->user()->role === 'admin' && $order->status == 'draft')
                                                 <form action="{{ route('purchase-orders.destroy', $order) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, 'Delete this purchase order?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -167,9 +174,11 @@
                         </div>
                         <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No purchase orders found</h4>
                         <p class="text-gray-500 dark:text-gray-400 mb-4">Create your first purchase order to start tracking supplier orders.</p>
-                        <a href="{{ route('purchase-orders.create') }}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow">
-                            <i class="fas fa-plus mr-2"></i> New Purchase Order
-                        </a>
+                        @if(in_array(auth()->user()->role, ['admin', 'manager', 'stock_keeper']))
+                            <a href="{{ route('purchase-orders.create') }}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow">
+                                <i class="fas fa-plus mr-2"></i> New Purchase Order
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>

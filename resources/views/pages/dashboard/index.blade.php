@@ -131,7 +131,7 @@
             </div>
         </div>
 
-        <!-- Sales Trend Chart -->
+        <!-- Sales Trend Chart (Weekly) -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Sales Trend (This Week)</h3>
@@ -181,7 +181,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Top Selling Products</h3>
             <div class="space-y-4">
-                @forelse($topProducts ?? [] as $item)
+                @forelse($topProducts as $item)
                 <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <div class="flex items-center">
                         <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
@@ -231,9 +231,9 @@
         const colors = getChartColors();
         
         const data = {
-            labels: @json($categoryNames ?? []),
+            labels: @json($categoryNames),
             datasets: [{
-                data: @json($categoryCounts ?? []),
+                data: @json($categoryCounts),
                 backgroundColor: colors.backgroundColors,
                 borderColor: colors.borderColor,
                 borderWidth: 1
@@ -283,13 +283,13 @@
         });
     };
 
-    // Initialize Sales Chart
+    // Initialize Sales Chart (Weekly)
     let salesChart;
     const initSalesChart = () => {
         const ctx = document.getElementById('salesChart').getContext('2d');
         const colors = getChartColors();
         
-        const salesData = @json($weeklySales ?? []);
+        const salesData = @json($weeklySales);
         const labels = salesData.map(item => {
             const date = new Date(item.date);
             return date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -359,10 +359,12 @@
             const response = await fetch('/dashboard/stats');
             const data = await response.json();
             
-            // Update counts
-            document.getElementById('totalProducts').textContent = data.totalProducts;
-            document.getElementById('activeProducts').textContent = data.activeProducts;
-            document.getElementById('todaySales').textContent = data.todaySales;
+            if (data.success) {
+                // Update counts
+                document.getElementById('totalProducts').textContent = data.data.totalProducts;
+                document.getElementById('activeProducts').textContent = data.data.activeProducts;
+                document.getElementById('todaySales').textContent = data.data.todaySales;
+            }
             
             // Update time
             document.querySelector('span.text-gray-500').textContent = `Last updated: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -408,15 +410,6 @@
             }
         }, 30000);
     });
-</script>
-
-<!-- Dark Mode Toggle Script -->
-<script>
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
 </script>
 
 <style>

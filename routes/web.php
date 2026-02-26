@@ -1,4 +1,5 @@
 <?php
+Route::get('/test', function() { return 'PHP is working!'; });
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\SalesImportController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ReportController; // 👈 ADD THIS
 
 /*
 |--------------------------------------------------------------------------
@@ -32,7 +34,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Protected Routes (require login)
 Route::middleware(['auth'])->group(function () {
     
-    // Authentication routes
+    // Authentication routes (if any)
     if (file_exists(base_path('routes/auth.php'))) {
         require base_path('routes/auth.php');
     }
@@ -131,13 +133,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customers/loyalty/dashboard', [CustomerController::class, 'loyalty'])->name('customers.loyalty');
     Route::get('/api/customers/search', [CustomerController::class, 'search'])->name('customers.search');
 
-    // 👇 USER MANAGEMENT ROUTES (NO MIDDLEWARE - HANDLED IN CONTROLLER)
+    // User Management routes
     Route::resource('users', UserController::class);
     Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::get('/users/{user}/activity', [UserController::class, 'activity'])->name('users.activity');
     Route::get('/activity-logs', [UserController::class, 'allActivity'])->name('users.activity.all');
     Route::get('/profile', [UserController::class, 'profile'])->name('users.profile');
     Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('users.profile.update');
+
+    // 👇 NEW REPORTS ROUTES
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/products', [ReportController::class, 'products'])->name('products');
+        Route::get('/profit', [ReportController::class, 'profit'])->name('profit');
+    });
 });
 
 // Fallback route

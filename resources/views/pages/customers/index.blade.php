@@ -120,17 +120,21 @@
             </div>
         </div>
 
-        <!-- Header with Add Button -->
+        <!-- Header with Action Buttons -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 sm:mb-0">Customer List</h3>
                 <div class="flex space-x-3">
-                    <a href="{{ route('customers.loyalty') }}" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
-                        <i class="fas fa-chart-line mr-2"></i> Loyalty Dashboard
-                    </a>
-                    <a href="{{ route('customers.create') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
-                        <i class="fas fa-plus mr-2"></i> Add Customer
-                    </a>
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                        <a href="{{ route('customers.loyalty') }}" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
+                            <i class="fas fa-chart-line mr-2"></i> Loyalty Dashboard
+                        </a>
+                    @endif
+                    @if(in_array(auth()->user()->role, ['admin', 'manager', 'cashier']))
+                        <a href="{{ route('customers.create') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center shadow">
+                            <i class="fas fa-plus mr-2"></i> Add Customer
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -169,13 +173,20 @@
                                     <td class="px-6 py-4">{{ $customer->last_visit ? $customer->last_visit->format('d M Y') : 'Never' }}</td>
                                     <td class="px-6 py-4">
                                         <div class="flex space-x-2">
+                                            <!-- View – everyone can view -->
                                             <a href="{{ route('customers.show', $customer) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="View">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('customers.edit', $customer) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            @if($customer->sales()->count() == 0)
+
+                                            <!-- Edit – admin, manager, cashier -->
+                                            @if(in_array(auth()->user()->role, ['admin', 'manager', 'cashier']))
+                                                <a href="{{ route('customers.edit', $customer) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            @endif
+
+                                            <!-- Delete – only admin -->
+                                            @if(auth()->user()->role === 'admin' && $customer->sales()->count() == 0)
                                                 <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline" onsubmit="return confirm('Delete this customer?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -202,9 +213,11 @@
                         </div>
                         <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No customers found</h4>
                         <p class="text-gray-500 dark:text-gray-400 mb-4">Add your first customer to start tracking loyalty.</p>
-                        <a href="{{ route('customers.create') }}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow">
-                            <i class="fas fa-plus mr-2"></i> Add Customer
-                        </a>
+                        @if(in_array(auth()->user()->role, ['admin', 'manager', 'cashier']))
+                            <a href="{{ route('customers.create') }}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow">
+                                <i class="fas fa-plus mr-2"></i> Add Customer
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>
