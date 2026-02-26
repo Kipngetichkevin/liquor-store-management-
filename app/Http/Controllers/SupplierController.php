@@ -6,13 +6,18 @@ use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use App\Traits\RoleCheckTrait;
 
 class SupplierController extends Controller
 {
+    use RoleCheckTrait;
+
     public function index(Request $request)
     {
-        $hasStatusColumn = Schema::hasColumn('suppliers', 'status');
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
 
+        $hasStatusColumn = Schema::hasColumn('suppliers', 'status');
         $query = Supplier::query();
 
         if ($request->filled('search')) {
@@ -29,7 +34,6 @@ class SupplierController extends Controller
         }
 
         $suppliers = $query->paginate(15);
-
         $total = Supplier::count();
 
         if ($hasStatusColumn) {
@@ -45,12 +49,7 @@ class SupplierController extends Controller
             }
         }
 
-        $stats = [
-            'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
-        ];
-
+        $stats = ['total' => $total, 'active' => $active, 'inactive' => $inactive];
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
             ['title' => 'Suppliers', 'url' => route('suppliers.index')],
@@ -61,6 +60,9 @@ class SupplierController extends Controller
 
     public function create()
     {
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
+
         $supplierCode = 'SUP-' . date('ym') . '-0001';
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
@@ -72,35 +74,42 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'tax_number' => 'nullable|string|max:50',
-            'contact_person' => 'nullable|string|max:255',
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:20',
+            'address'         => 'nullable|string',
+            'tax_number'      => 'nullable|string|max:50',
+            'contact_person'  => 'nullable|string|max:255',
         ]);
 
-        $validated['supplier_code'] = Supplier::generateSupplierCode();
-        $validated['status'] = $request->status ?? 'active';
+        if (method_exists(Supplier::class, 'generateSupplierCode')) {
+            $validated['supplier_code'] = Supplier::generateSupplierCode();
+        }
 
+        $validated['status'] = $request->status ?? 'active';
         if ($request->has('is_active')) {
             $validated['is_active'] = $request->boolean('is_active');
         }
 
         try {
-            Supplier::create($validated);
-            return redirect()->route('suppliers.index')
-                ->with('success', 'Supplier created successfully.');
+            $supplier = Supplier::create($validated);
+            auth()->user()->logActivity('create', 'suppliers', 'Created supplier: ' . $supplier->name);
+            return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier creation failed: ' . $e->getMessage());
-            return back()->withInput()
-                ->with('error', 'Failed to create supplier. Please try again.');
+            return back()->withInput()->with('error', 'Failed to create supplier.');
         }
     }
 
     public function show(Supplier $supplier)
     {
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
+
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
             ['title' => 'Suppliers', 'url' => route('suppliers.index')],
@@ -111,6 +120,9 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier)
     {
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
+
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
             ['title' => 'Suppliers', 'url' => route('suppliers.index')],
@@ -121,44 +133,49 @@ class SupplierController extends Controller
 
     public function update(Request $request, Supplier $supplier)
     {
+        $check = $this->checkRole(['admin', 'manager', 'stock_keeper']);
+        if ($check !== true) return $check;
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'tax_number' => 'nullable|string|max:50',
-            'contact_person' => 'nullable|string|max:255',
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:20',
+            'address'         => 'nullable|string',
+            'tax_number'      => 'nullable|string|max:50',
+            'contact_person'  => 'nullable|string|max:255',
         ]);
 
         $validated['status'] = $request->status ?? $supplier->status;
-
         if ($request->has('is_active')) {
             $validated['is_active'] = $request->boolean('is_active');
         }
 
         try {
             $supplier->update($validated);
-            return redirect()->route('suppliers.index')
-                ->with('success', 'Supplier updated successfully.');
+            auth()->user()->logActivity('update', 'suppliers', 'Updated supplier: ' . $supplier->name);
+            return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier update failed: ' . $e->getMessage());
-            return back()->withInput()
-                ->with('error', 'Failed to update supplier. Please try again.');
+            return back()->withInput()->with('error', 'Failed to update supplier.');
         }
     }
 
     public function destroy(Supplier $supplier)
     {
+        $check = $this->checkRole(['admin']);
+        if ($check !== true) return $check;
+
         try {
             if (method_exists($supplier, 'products') && $supplier->products()->count() > 0) {
                 return back()->with('error', 'Cannot delete supplier because it has associated products.');
             }
+            $name = $supplier->name;
             $supplier->delete();
-            return redirect()->route('suppliers.index')
-                ->with('success', 'Supplier deleted successfully.');
+            auth()->user()->logActivity('delete', 'suppliers', 'Deleted supplier: ' . $name);
+            return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Supplier deletion failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to delete supplier. Please try again.');
+            return back()->with('error', 'Failed to delete supplier.');
         }
     }
 }

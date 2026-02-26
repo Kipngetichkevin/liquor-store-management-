@@ -1,4 +1,4 @@
-﻿<!-- Header -->
+<!-- Header -->
 <nav class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 fixed top-0 right-0 left-0 z-30 px-4 py-3">
     <div class="flex items-center justify-between">
         <!-- Left: Sidebar toggle button (visible on all screens) + brand -->
@@ -54,10 +54,19 @@
                         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ Auth::user()->name ?? 'Admin User' }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email ?? 'admin@liquorms.test' }}</p>
                     </div>
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"><i class="fas fa-user mr-2"></i> My Profile</a>
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"><i class="fas fa-cog mr-2"></i> Settings</a>
+                    <a href="{{ route('users.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <i class="fas fa-user mr-2"></i> My Profile
+                    </a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <i class="fas fa-cog mr-2"></i> Settings
+                    </a>
                     <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                    <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"><i class="fas fa-sign-out-alt mr-2"></i> Sign Out</a>
+                    <form method="POST" action="{{ route('logout') }}" class="block">
+                        @csrf
+                        <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Sign Out
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -70,11 +79,13 @@
         const menu = document.getElementById('user-menu');
         menu.classList.toggle('hidden');
     }
+    
     // Toggle notifications
     function toggleNotifications() {
         const notif = document.getElementById('notifications-dropdown');
         if (notif) notif.classList.toggle('hidden');
     }
+    
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {
         const userMenu = document.getElementById('user-menu');
@@ -83,6 +94,7 @@
             userMenu.classList.add('hidden');
         }
     });
+    
     // Search functionality
     document.getElementById('search')?.addEventListener('keyup', function(e) {
         if (e.key === 'Enter') console.log('Searching for:', this.value);

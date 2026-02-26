@@ -9,22 +9,23 @@ use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Traits\RoleCheckTrait;
 
 class PosController extends Controller
 {
+    use RoleCheckTrait;
+
     public function index(Request $request)
     {
-        // Get selected customer from session
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $selectedCustomer = session('pos_customer');
-        
         $products = Product::with('category')
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
-
         $cart = session()->get('pos_cart', []);
-
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
             ['title' => 'Point of Sale', 'url' => route('pos.index')],
@@ -38,8 +39,10 @@ class PosController extends Controller
      */
     public function searchCustomers(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $query = $request->get('q', '');
-        
         $customers = Customer::where('name', 'like', "%{$query}%")
             ->orWhere('email', 'like', "%{$query}%")
             ->orWhere('phone', 'like', "%{$query}%")
@@ -48,7 +51,6 @@ class PosController extends Controller
             ->limit(10)
             ->get(['id', 'customer_code', 'name', 'email', 'phone', 'tier', 'loyalty_points']);
 
-        // Add tier badge HTML for each customer
         foreach ($customers as $customer) {
             $customer->tier_badge = $customer->tier_badge;
             $customer->discount = method_exists($customer, 'getDiscountPercentage') ? $customer->getDiscountPercentage() : 0;
@@ -62,11 +64,13 @@ class PosController extends Controller
      */
     public function selectCustomer(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $request->validate(['customer_id' => 'required|exists:customers,id']);
-        
         $customer = Customer::find($request->customer_id);
         session(['pos_customer' => $customer]);
-        
+
         return response()->json([
             'success' => true,
             'customer' => [
@@ -86,6 +90,9 @@ class PosController extends Controller
      */
     public function clearCustomer()
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         session()->forget('pos_customer');
         return response()->json(['success' => true]);
     }
@@ -95,8 +102,11 @@ class PosController extends Controller
      */
     public function quickAddCustomer(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name'  => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|unique:customers,email',
         ]);
@@ -114,7 +124,10 @@ class PosController extends Controller
         try {
             $customer = Customer::create($validated);
             session(['pos_customer' => $customer]);
-            
+
+            // Log activity
+            auth()->user()->logActivity('create', 'customers', 'Quick added customer from POS: ' . $customer->name);
+
             return response()->json([
                 'success' => true,
                 'customer' => [
@@ -139,9 +152,12 @@ class PosController extends Controller
 
     public function addToCart(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'quantity'   => 'required|integer|min:1',
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -167,12 +183,12 @@ class PosController extends Controller
             $cart[$product->id]['subtotal'] = $newQty * $cart[$product->id]['unit_price'];
         } else {
             $cart[$product->id] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
+                'id'         => $product->id,
+                'name'       => $product->name,
+                'sku'        => $product->sku,
                 'unit_price' => $product->price,
-                'quantity' => $request->quantity,
-                'subtotal' => $request->quantity * $product->price,
+                'quantity'   => $request->quantity,
+                'subtotal'   => $request->quantity * $product->price,
             ];
         }
 
@@ -180,16 +196,19 @@ class PosController extends Controller
 
         return response()->json([
             'success' => true,
-            'cart' => $cart,
-            'total' => $this->calculateCartTotal($cart),
+            'cart'    => $cart,
+            'total'   => $this->calculateCartTotal($cart),
         ]);
     }
 
     public function updateCart(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:0',
+            'quantity'   => 'required|integer|min:0',
         ]);
 
         $cart = session()->get('pos_cart', []);
@@ -212,13 +231,16 @@ class PosController extends Controller
 
         return response()->json([
             'success' => true,
-            'cart' => $cart,
-            'total' => $this->calculateCartTotal($cart),
+            'cart'    => $cart,
+            'total'   => $this->calculateCartTotal($cart),
         ]);
     }
 
     public function removeFromCart(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $request->validate(['product_id' => 'required']);
 
         $cart = session()->get('pos_cart', []);
@@ -227,23 +249,29 @@ class PosController extends Controller
 
         return response()->json([
             'success' => true,
-            'cart' => $cart,
-            'total' => $this->calculateCartTotal($cart),
+            'cart'    => $cart,
+            'total'   => $this->calculateCartTotal($cart),
         ]);
     }
 
     public function clearCart()
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         session()->forget('pos_cart');
         return response()->json(['success' => true]);
     }
 
     public function store(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $request->validate([
             'payment_method' => 'required|in:cash,card,mobile_money,credit',
-            'amount_paid' => 'required|numeric|min:0',
-            'notes' => 'nullable|string',
+            'amount_paid'    => 'required|numeric|min:0',
+            'notes'          => 'nullable|string',
         ]);
 
         $cart = session()->get('pos_cart', []);
@@ -253,18 +281,15 @@ class PosController extends Controller
             return back()->with('error', 'Cart is empty.');
         }
 
-        // Calculate total from cart (VAT inclusive)
         $totalInclusive = $this->calculateCartTotal($cart);
-
-        // Apply customer discount if applicable
         $discountAmount = 0;
+
         if ($selectedCustomer && method_exists($selectedCustomer, 'getDiscountPercentage')) {
             $discountPercentage = $selectedCustomer->getDiscountPercentage();
             $discountAmount = round($totalInclusive * $discountPercentage / 100, 2);
             $totalInclusive = $totalInclusive - $discountAmount;
         }
 
-        // Extract tax from total
         $taxRate = config('pos.tax_rate', 16);
         $subtotal = round($totalInclusive / (1 + ($taxRate / 100)), 2);
         $tax = $totalInclusive - $subtotal;
@@ -276,32 +301,30 @@ class PosController extends Controller
         $change = $request->amount_paid - $totalInclusive;
 
         DB::beginTransaction();
-
         try {
             $sale = Sale::create([
-                'invoice_number' => Sale::generateInvoiceNumber(),
-                'user_id' => auth()->id(),
-                'customer_id' => $selectedCustomer ? $selectedCustomer->id : null,
-                'subtotal' => $subtotal,
-                'tax_amount' => $tax,
+                'invoice_number'  => Sale::generateInvoiceNumber(),
+                'user_id'         => auth()->id(),
+                'customer_id'     => $selectedCustomer ? $selectedCustomer->id : null,
+                'subtotal'        => $subtotal,
+                'tax_amount'      => $tax,
                 'discount_amount' => $discountAmount,
-                'total_amount' => $totalInclusive,
-                'amount_paid' => $request->amount_paid,
-                'change' => $change,
-                'payment_method' => $request->payment_method,
-                'notes' => $request->notes,
+                'total_amount'    => $totalInclusive,
+                'amount_paid'     => $request->amount_paid,
+                'change'          => $change,
+                'payment_method'  => $request->payment_method,
+                'notes'           => $request->notes,
             ]);
 
             foreach ($cart as $item) {
-                // Calculate item subtotal excluding tax
                 $itemSubtotal = round($item['unit_price'] / (1 + ($taxRate / 100)), 2);
 
                 SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $itemSubtotal,
-                    'subtotal' => $itemSubtotal * $item['quantity'],
+                    'sale_id'     => $sale->id,
+                    'product_id'  => $item['id'],
+                    'quantity'    => $item['quantity'],
+                    'unit_price'  => $itemSubtotal,
+                    'subtotal'    => $itemSubtotal * $item['quantity'],
                     'total_price' => $item['subtotal'],
                 ]);
 
@@ -314,7 +337,6 @@ class PosController extends Controller
                 );
             }
 
-            // Update customer data if customer selected
             if ($selectedCustomer) {
                 $selectedCustomer->total_spent += $totalInclusive;
                 $selectedCustomer->total_visits += 1;
@@ -325,8 +347,15 @@ class PosController extends Controller
             }
 
             DB::commit();
-            
-            // Clear cart and customer session
+
+            // Log activity
+            $customerText = $selectedCustomer ? " for customer {$selectedCustomer->name}" : "";
+            auth()->user()->logActivity(
+                'create',
+                'pos',
+                "Processed sale #{$sale->invoice_number} worth KSh {$totalInclusive}{$customerText}"
+            );
+
             session()->forget('pos_cart');
             session()->forget('pos_customer');
 
@@ -341,8 +370,10 @@ class PosController extends Controller
 
     public function receipt(Sale $sale)
     {
-        $sale->load('items.product', 'user', 'customer');
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
 
+        $sale->load('items.product', 'user', 'customer');
         $breadcrumbs = [
             ['title' => 'Dashboard', 'url' => route('dashboard')],
             ['title' => 'POS', 'url' => route('pos.index')],
@@ -354,6 +385,9 @@ class PosController extends Controller
 
     public function search(Request $request)
     {
+        $check = $this->checkRole(['admin', 'manager', 'cashier']);
+        if ($check !== true) return $check;
+
         $query = $request->get('q', '');
 
         $products = Product::with('category')
