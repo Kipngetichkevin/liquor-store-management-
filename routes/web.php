@@ -14,7 +14,7 @@ use App\Http\Controllers\SalesImportController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ReportController; // 👈 ADD THIS
+use App\Http\Controllers\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +39,7 @@ Route::middleware(['auth'])->group(function () {
         require base_path('routes/auth.php');
     }
 
-    // Dashboard routes - everyone can view
+    // Dashboard routes
     Route::prefix('dashboard')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
@@ -141,11 +141,66 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [UserController::class, 'profile'])->name('users.profile');
     Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('users.profile.update');
 
-    // 👇 NEW REPORTS ROUTES
+    // Reports routes
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/products', [ReportController::class, 'products'])->name('products');
         Route::get('/profit', [ReportController::class, 'profit'])->name('profit');
     });
+});
+
+// ========== M-PESA ROUTES (PUBLIC) ==========
+Route::post('/mpesa/initiate', [App\Http\Controllers\MpesaController::class, 'initiate'])->name('mpesa.initiate');
+Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
+Route::get('/mpesa/query/{id}', [App\Http\Controllers\MpesaController::class, 'query'])->name('mpesa.query');
+
+// Temporary test route (remove after testing)
+Route::get('/test-mpesa', function() {
+    $request = new \Illuminate\Http\Request();
+    $request->replace([
+        'phone' => '254708374149',
+        'amount' => 10,
+        'account_reference' => 'TEST001',
+        'transaction_desc' => 'Test payment',
+        'sale_id' => 1
+    ]);
+    $controller = app()->make('App\Http\Controllers\MpesaController');
+    return $controller->initiate($request);
+});
+
+// ========== CONNECTIVITY TEST ROUTE ==========
+Route::get('/test-connect', function() {
+    try {
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $response = $client->get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', [
+            'auth' => [env('MPESA_CONSUMER_KEY'), env('MPESA_CONSUMER_SECRET')]
+        ]);
+        return 'Connection successful: ' . $response->getBody();
+    } catch (\Exception $e) {
+        return 'Connection failed: ' . $e->getMessage();
+    }
+});
+
+// ========== DIRECT STK PUSH TEST ROUTE ==========
+Route::get('/test-stk', function() {
+    try {
+        $mpesaService = app()->make('App\Services\MpesaService');
+        $callbackUrl = env('MPESA_CALLBACK_URL');
+        $response = $mpesaService->stkPush(
+            '254708374149',
+            10,
+            'TEST001',
+            'Test payment',
+            $callbackUrl
+        );
+        return response()->json(['success' => true, 'data' => $response]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// ========== TEST ROUTE FOR CSRF STATUS ==========
+Route::post('/test-no-csrf', function() {
+    return response()->json(['message' => 'Success']);
 });
 
 // Fallback route

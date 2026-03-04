@@ -20,6 +20,8 @@ class Sale extends Model
         'amount_paid',
         'change',
         'payment_method',
+        'mobile_number',
+        'payment_reference',
         'payment_status',
         'status',
         'notes',

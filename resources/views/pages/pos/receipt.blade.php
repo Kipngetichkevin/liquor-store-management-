@@ -9,15 +9,12 @@
 <style>
     /* Print styles – hide everything except the receipt */
     @media print {
-        /* Hide everything outside the receipt container */
         body * {
             visibility: hidden;
         }
-        /* Show only the receipt container and its children */
         .receipt-container, .receipt-container * {
             visibility: visible;
         }
-        /* Position the receipt at the top of the printed page */
         .receipt-container {
             position: absolute;
             left: 0;
@@ -27,11 +24,9 @@
             background: white;
             color: black;
         }
-        /* Remove extra page margins */
         @page {
             margin: 1cm;
         }
-        /* Style adjustments for better print appearance */
         .receipt-container .bg-white {
             background: white !important;
             border: none !important;
@@ -43,11 +38,9 @@
         .receipt-container .dark\:bg-gray-800 {
             background: white !important;
         }
-        /* Hide print button and New Sale button */
         .receipt-container .no-print {
             display: none;
         }
-        /* Ensure tables look clean */
         .receipt-container table {
             width: 100%;
             border-collapse: collapse;
@@ -134,6 +127,19 @@
                         <span class="text-gray-600 dark:text-gray-400">Payment Method:</span>
                         <span class="font-medium text-gray-800 dark:text-white capitalize">{{ $sale->payment_method }}</span>
                     </div>
+
+                    {{-- Show mobile payment details if applicable --}}
+                    @if($sale->payment_method == 'mobile_money')
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-600 dark:text-gray-400">Mobile Number:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">{{ $sale->mobile_number }}</span>
+                        </div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-600 dark:text-gray-400">Transaction ID:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">{{ $sale->payment_reference }}</span>
+                        </div>
+                    @endif
+
                     <div class="flex justify-between mb-2">
                         <span class="text-gray-600 dark:text-gray-400">Amount Paid:</span>
                         <span class="font-medium text-gray-800 dark:text-white">{{ number_format($sale->amount_paid, 2) }}</span>

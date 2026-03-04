@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class MpesaService
+{
+    protected $consumerKey;
+    protected $consumerSecret;
+    protected $shortCode;
+    protected $passKey;
+    protected $environment;
+
+    public function __construct()
+    {
+        $this->consumerKey = env('MPESA_CONSUMER_KEY');
+        $this->consumerSecret = env('MPESA_CONSUMER_SECRET');
+        $this->shortCode = env('MPESA_SHORTCODE');
+        $this->passKey = env('MPESA_PASSKEY');
+        $this->environment = env('MPESA_ENV', 'sandbox');
+    }
+
+    /**
+     * Generate access token
+     */
+    public function getAccessToken()
+    {
+        $url = $this->environment === 'sandbox'
+            ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+            : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->timeout(30)
+            ->get($url);
+
+        if ($response->failed()) {
+            Log::error('Failed to get M-Pesa access token', ['response' => $response->body()]);
+            throw new \Exception('Could not obtain access token');
+        }
+
+        return $response->json()['access_token'];
+    }
+
+    /**
+     * Generate password for STK push
+     */
+    protected function generatePassword($timestamp)
+    {
+        $data = $this->shortCode . $this->passKey . $timestamp;
+        return base64_encode($data);
+    }
+
+    /**
+     * Initiate STK push
+     */
+    public function stkPush($phone, $amount, $accountReference, $transactionDesc, $callbackUrl)
+    {
+        $token = $this->getAccessToken();
+        $timestamp = date('YmdHis');
+        $password = $this->generatePassword($timestamp);
+
+        $url = $this->environment === 'sandbox'
+            ? 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+            : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+
+        $payload = [
+            'BusinessShortCode' => $this->shortCode,
+            'Password' => $password,
+            'Timestamp' => $timestamp,
+            'TransactionType' => 'CustomerPayBillOnline',
+            'Amount' => round($amount),
+            'PartyA' => $phone,
+            'PartyB' => $this->shortCode,
+            'PhoneNumber' => $phone,
+            'CallBackURL' => $callbackUrl,
+            'AccountReference' => substr($accountReference, 0, 12),
+            'TransactionDesc' => substr($transactionDesc, 0, 13)
+        ];
+
+        $response = Http::withToken($token)
+            ->timeout(60)               // wait up to 60 seconds
+            ->retry(3, 100)              // retry up to 3 times with 100ms delay
+            ->post($url, $payload);
+
+        if ($response->failed()) {
+            Log::error('STK push failed', ['response' => $response->body()]);
+            throw new \Exception('STK push request failed');
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Query STK push status
+     */
+    public function queryStatus($checkoutRequestId)
+    {
+        $token = $this->getAccessToken();
+        $timestamp = date('YmdHis');
+        $password = $this->generatePassword($timestamp);
+
+        $url = $this->environment === 'sandbox'
+            ? 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
+            : 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query';
+
+        $payload = [
+            'BusinessShortCode' => $this->shortCode,
+            'Password' => $password,
+            'Timestamp' => $timestamp,
+            'CheckoutRequestID' => $checkoutRequestId
+        ];
+
+        $response = Http::withToken($token)
+            ->timeout(60)
+            ->retry(3, 100)
+            ->post($url, $payload);
+
+        if ($response->failed()) {
+            Log::error('STK query failed', ['response' => $response->body()]);
+            throw new \Exception('STK query failed');
+        }
+
+        return $response->json();
+    }
+}

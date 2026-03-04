@@ -269,9 +269,12 @@ class PosController extends Controller
         if ($check !== true) return $check;
 
         $request->validate([
-            'payment_method' => 'required|in:cash,card,mobile_money,credit',
-            'amount_paid'    => 'required|numeric|min:0',
-            'notes'          => 'nullable|string',
+            'payment_method'    => 'required|in:cash,card,mobile_money,credit',
+            'amount_paid'       => 'required|numeric|min:0',
+            'notes'             => 'nullable|string',
+            // Mobile money fields
+            'mobile_number'     => 'nullable|required_if:payment_method,mobile_money|string|max:20',
+            'payment_reference' => 'nullable|string|max:50',
         ]);
 
         $cart = session()->get('pos_cart', []);
@@ -313,6 +316,9 @@ class PosController extends Controller
                 'amount_paid'     => $request->amount_paid,
                 'change'          => $change,
                 'payment_method'  => $request->payment_method,
+                // Mobile money fields
+                'mobile_number'   => $request->mobile_number,
+                'payment_reference' => $request->payment_reference,
                 'notes'           => $request->notes,
             ]);
 
